@@ -133,4 +133,49 @@ test.describe('Game Listing and Navigation', () => {
       await expect(page.getByTestId('not-found-home-link')).toBeVisible();
     });
   });
+
+  test('should filter games by category', async ({ page }) => {
+    await page.goto('/');
+    const firstCard = page.getByTestId('game-card').first();
+    const categoryName = await firstCard.getByTestId('game-category').innerText();
+    const categoryValues = await page.getByTestId('category-filter').locator('option').evaluateAll((options) =>
+      options.slice(0, 2).map((option) => (option as HTMLOptionElement).value),
+    );
+
+    await page.getByTestId('category-filter').selectOption(categoryValues);
+
+    const visibleCards = page.getByTestId('game-card').filter({ visible: true });
+    await expect(visibleCards.first()).toBeVisible();
+    await expect(visibleCards.first().getByTestId('game-category')).toHaveText(categoryName);
+    await expect(page.getByTestId('category-filter').locator('option:checked')).toHaveCount(categoryValues.length);
+  });
+
+  test('should filter games by publisher', async ({ page }) => {
+    await page.goto('/');
+    const firstCard = page.getByTestId('game-card').first();
+    const publisherId = await firstCard.getAttribute('data-publisher-id');
+    const publisherName = await firstCard.getByTestId('game-publisher').innerText();
+
+    await page.getByTestId('publisher-filter').selectOption(publisherId ?? '');
+
+    const visibleCards = page.getByTestId('game-card').filter({ visible: true });
+    await expect(visibleCards.first()).toBeVisible();
+    await expect(visibleCards.first().getByTestId('game-publisher')).toHaveText(publisherName);
+  });
+
+  test('should combine category and publisher filters', async ({ page }) => {
+    await page.goto('/');
+    const firstCard = page.getByTestId('game-card').first();
+    const categoryId = await firstCard.getAttribute('data-category-id');
+    const publisherId = await firstCard.getAttribute('data-publisher-id');
+
+    await page.getByTestId('category-filter').selectOption(categoryId ?? '');
+    await page.getByTestId('publisher-filter').selectOption(publisherId ?? '');
+
+    const visibleCards = page.getByTestId('game-card').filter({ visible: true });
+    await expect(visibleCards.first()).toBeVisible();
+    await expect(visibleCards.first()).toHaveAttribute('data-category-id', categoryId ?? '');
+    await expect(visibleCards.first()).toHaveAttribute('data-publisher-id', publisherId ?? '');
+    await expect(page.getByTestId('filter-result-count')).toContainText('Showing');
+  });
 });
