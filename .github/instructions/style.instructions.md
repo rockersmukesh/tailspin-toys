@@ -46,6 +46,12 @@ ALL UI components MUST use dark theme colors:
 - Use semantic grouping: layout, spacing, colors, typography
 - Keep utility combinations readable and maintainable
 
+## TypeScript and comments in UI files
+
+- Use four-space indentation, semicolons, single quotes, and trailing commas in multiline TypeScript. ESLint enforces semicolons and quote style; keep the other conventions consistent with the surrounding file.
+- Keep comments limited to intent, constraints, or non-obvious design decisions. Do not use comments to restate a class name or markup.
+- Update or remove comments when the styling or behavior they describe changes.
+
 ## Modern UI Patterns
 
 - Rounded corners: `rounded-lg`, `rounded-xl`, `rounded-2xl`
