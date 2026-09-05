@@ -3,9 +3,11 @@ import { createTestDatabase } from '../../db/test-helpers';
 import { categories, publishers, games } from '../../db/schema';
 import type { Database } from './db';
 import {
+    getAllCategories,
     getAllGames,
     getAllGameIds,
     getGameById,
+    getAllPublishers,
 } from './games';
 
 async function seedGames(db: Database, count: number): Promise<void> {
@@ -62,5 +64,48 @@ describe('games data-access helpers', () => {
     it('returns null for a non-existent game', async () => {
         await seedGames(db, 2);
         expect(await getGameById(db, 99999)).toBeNull();
+    });
+
+    it('returns categories and publishers ordered by name', async () => {
+        await db.insert(categories).values([
+            { name: 'Tactics', description: 'cat' },
+            { name: 'Adventure', description: 'cat' },
+        ]);
+        await db.insert(publishers).values([
+            { name: 'Zed Games', description: 'pub' },
+            { name: 'Alpha Games', description: 'pub' },
+        ]);
+
+        expect((await getAllCategories(db)).map((category) => category.name)).toEqual(['Adventure', 'Tactics']);
+        expect((await getAllPublishers(db)).map((publisher) => publisher.name)).toEqual(['Alpha Games', 'Zed Games']);
+    });
+
+    it('filters games by one or more categories and a publisher', async () => {
+        const categoryRows = await db
+            .insert(categories)
+            .values([
+                { name: 'Strategy', description: 'cat' },
+                { name: 'Adventure', description: 'cat' },
+            ])
+            .returning({ id: categories.id });
+        const publisherRows = await db
+            .insert(publishers)
+            .values([
+                { name: 'Pub One', description: 'pub' },
+                { name: 'Pub Two', description: 'pub' },
+            ])
+            .returning({ id: publishers.id });
+        await db.insert(games).values([
+            { title: 'Alpha', description: 'a', categoryId: categoryRows[0].id, publisherId: publisherRows[0].id, starRating: 4 },
+            { title: 'Beta', description: 'b', categoryId: categoryRows[1].id, publisherId: publisherRows[0].id, starRating: 4 },
+            { title: 'Gamma', description: 'c', categoryId: categoryRows[0].id, publisherId: publisherRows[1].id, starRating: 4 },
+        ]);
+
+        expect((await getAllGames(db, { categoryIds: [categoryRows[0].id, categoryRows[1].id] })).map((game) => game.title))
+            .toEqual(['Alpha', 'Beta', 'Gamma']);
+        expect((await getAllGames(db, { publisherId: publisherRows[0].id })).map((game) => game.title))
+            .toEqual(['Alpha', 'Beta']);
+        expect((await getAllGames(db, { categoryIds: [categoryRows[0].id], publisherId: publisherRows[0].id })).map((game) => game.title))
+            .toEqual(['Alpha']);
     });
 });
