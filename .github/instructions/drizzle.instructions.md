@@ -51,9 +51,23 @@ export async function getAllGameIds(db: Database): Promise<number[]> {
 }
 ```
 
+- Every exported function in `db/` and `src/lib/` must have a TSDoc/JSDoc comment immediately above its declaration. Describe the function's purpose, each parameter (including the injectable `db` argument), and its return value. Keep comments focused on intent and the contract; do not restate the implementation.
+- Update or remove comments whenever the related behavior changes. An outdated comment is a correctness bug.
 - Always `order by` a stable column (title) so static builds are deterministic.
 - Map raw rows to the app-facing `Game`/`Publisher`/`Category` types in one place; don't leak Drizzle row shapes into components.
 - Keep ordering/lookup logic in `games.ts`, not in pages.
+
+```ts
+/**
+ * Returns all game IDs in the stable order used by static routes.
+ *
+ * @param db Injectable database client used for the query.
+ * @returns Game IDs ordered alphabetically by title.
+ */
+export async function getAllGameIds(db: Database): Promise<number[]> {
+  // ...
+}
+```
 
 ## Determinism
 
@@ -70,3 +84,9 @@ Node.js 22.13 or later is required because the data layer uses the built-in `nod
 ## Type checking
 
 The data layer (`db/**/*.ts`, `src/lib/*.ts`) is type-checked by `npm run typecheck`, which runs the native **TypeScript 7** compiler (`tsgo`, from `@typescript/native-preview`) against `tsconfig.tsgo.json`. Keep helpers exported with explicit parameter and return types so `tsgo` can verify them. Linting is unaffected — ESLint + `typescript-eslint` still run on the classic `typescript` package.
+
+## TypeScript formatting and comments
+
+- Use four-space indentation, semicolons, single quotes, and trailing commas in multiline collections and parameter lists. Semicolons and quote style are enforced for TypeScript by the repository ESLint configuration; keep the other conventions consistent with the surrounding file.
+- Keep explicit parameter and return types on exported functions, even when TypeScript could infer them.
+- Comments should explain why a non-obvious decision or constraint exists. Do not add comments that merely narrate the next line of code.
